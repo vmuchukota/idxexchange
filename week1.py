@@ -1,3 +1,13 @@
+"""
+Week 1 Deliverable
+This script does the following: 
+1. Loads all monthly CRMLS sold and listing CSV files.
+2. Concatenates them into two combined datasets.
+3. Filters both datasets to residential properties only.
+4. Prints row counts before and after concatenation and filtering.
+5. Saves the filtered datasets as CSV files.
+"""
+
 import datetime
 import pandas as pd
 from pathlib import Path
@@ -24,7 +34,7 @@ sold_rows_before = 0
 for month in months:
     filename = Path(f"data/CRMLSSold{month}.csv")
     if filename.exists():
-        df = pd.read_csv(filename)
+        df = pd.read_csv(filename, low_memory=False)
         sold_rows_before += len(df)
         sold_dfs.append(df)
         print(f"Loaded {filename.name} ({len(df):,} rows)")
@@ -54,7 +64,7 @@ listing_rows_before = 0
 for month in months:
     filename = Path(f"data/CRMLSListing{month}.csv")
     if filename.exists():
-        df = pd.read_csv(filename)
+        df = pd.read_csv(filename, low_memory=False)
         listing_rows_before += len(df)
         listing_dfs.append(df)
         print(f"Loaded {filename.name} ({len(df):,} rows)")
