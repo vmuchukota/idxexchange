@@ -9,8 +9,9 @@ This script does the following:
 """
 
 import pandas as pd
+import matplotlib.pyplot as plt
 
-# loading the combined residential datasets 
+# loading the combined residential datasets froom week 1
 sold = pd.read_csv(
     "CombinedSoldResidential.csv",
     low_memory=False
@@ -59,7 +60,6 @@ def missing_value_report(df, dataset_name):
     report["Over 90% Missing"] = (report["Percent Missing"] > 90)
 
     filename = f"{dataset_name}_MissingReport.csv"
-
     report.to_csv(filename, index=False)
 
     print(f"{filename} saved.")
@@ -68,6 +68,33 @@ def missing_value_report(df, dataset_name):
 
 sold_missing = missing_value_report(sold, "Sold")
 listing_missing = missing_value_report(listings, "Listings")
+
+print(sold_missing.head())
+print(listing_missing.head())
+
+#dropping columns over 90%
+def drop_high_missing(df, missing_report, dataset_name):
+
+    # Find columns with more than 90% missing values
+    columns_to_drop = missing_report.loc[
+        missing_report["Over 90% Missing"],
+        "Column"
+    ].tolist()
+
+    # Drop the columns
+    df = df.drop(columns=columns_to_drop)
+
+    print(f"\n{dataset_name}")
+    print(f"Dropped {len(columns_to_drop)} columns with >90% missing values.")
+
+    if columns_to_drop:
+        print(columns_to_drop)
+
+    return df
+
+
+sold = drop_high_missing(sold, sold_missing, "Sold Dataset")
+listings = drop_high_missing(listings, listing_missing, "Listings Dataset")
 
 
 # numeric distribution summary
@@ -91,8 +118,50 @@ def numeric_summary(df, dataset_name):
 
     return summary
 
-numeric_summary(sold, "Sold")
-numeric_summary(listings, "Listings")
+sold_summary = numeric_summary(sold, "Sold")
+listing_summary = numeric_summary(listings, "Listings")
+
+print(sold_summary)
+print(listing_summary)
+
+#histograms
+for column in numeric_columns:
+
+    if column not in sold.columns:
+        continue
+
+    plt.figure(figsize=(8,5))
+
+    sold[column].dropna().hist(bins=30)
+
+    plt.title(f"Sold Dataset - {column}")
+    plt.xlabel(column)
+    plt.ylabel("Frequency")
+
+    plt.tight_layout()
+
+    plt.savefig(f"Sold_{column}_Histogram.png")
+    plt.show()
+
+for column in numeric_columns:
+
+    if column not in listings.columns:
+        continue
+
+    plt.figure(figsize=(8,5))
+
+    listings[column].dropna().hist(bins=30)
+
+    plt.title(f"Listings Dataset - {column}")
+    plt.xlabel(column)
+    plt.ylabel("Frequency")
+
+    plt.tight_layout()
+
+    plt.savefig(f"Listings_{column}_Histogram.png")
+    plt.show()
+
+#week 3 components
 
 # download mortage rates from FRED
 url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=MORTGAGE30US"
@@ -112,6 +181,7 @@ mortgage.rename(
     inplace=True
 )
 
+#year_month so that housing records can be matched with the monthly mortgage rates
 mortgage["year_month"] = (mortgage["date"].dt.to_period("M"))
 
 mortgage_monthly = (
@@ -165,15 +235,9 @@ listings.to_csv(
     index=False
 )
 
-print("\nFinished!")
+print("\nFinished.")
 
-print("Files Created:")
-print("- Sold_MissingReport.csv")
-print("- Listings_MissingReport.csv")
-print("- Sold_NumericSummary.csv")
-print("- Listings_NumericSummary.csv")
-print("- CombinedSoldResidentialRates.csv")
-print("- CombinedListingsResidentialRates.csv")
+
 
 
 
