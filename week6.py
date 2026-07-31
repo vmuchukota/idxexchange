@@ -122,10 +122,22 @@ listings["YrMo"] = (
 print("Listings features completed.")
 
 #adding school district information
-districts = gpd.read_file("data/districts/DistrictAreas2425.shp")
-print(districts.columns.tolist())
+districts = gpd.read_file(
+    "data/districts/DistrictAreas2425.shp"
+)
 
-print(f"Loaded {len(districts)} school district boundaries.")
+# rename truncated shapefile columns
+districts = districts.rename(columns={
+    "DistrictNa": "DistrictName",
+    "DistrictTy": "DistrictType"
+})
+
+# keeping only Unified School Districts
+districts = districts[
+    districts["DistrictType"] == "Unified"
+].copy()
+
+print(f"Loaded {len(districts)} Unified School District boundaries.")
 
 #creating geodataframe for sold properties
 print("Creating geographic points for sold properties...")
@@ -159,11 +171,6 @@ listings_geo = gpd.GeoDataFrame(
     crs="EPSG:4326"
 )
 
-###################
-print("District CRS:", districts.crs)
-print("Sold CRS:", sold_geo.crs)
-###################
-
 
 #match coordinate systms
 if districts.crs is None:
@@ -180,14 +187,14 @@ print("Assigning school districts...")
 
 sold_join = gpd.sjoin(
     sold_geo,
-    districts[["DistrictNa", "DistrictTy", "geometry"]],
+    districts[["DistrictName", "DistrictType", "geometry"]],
     how="left",
     predicate="within"
 )
 
 listings_join = gpd.sjoin(
     listings_geo,
-    districts[["DistrictNa", "DistrictTy", "geometry"]],
+    districts[["DistrictName", "DistrictType", "geometry"]],
     how="left",
     predicate="within"
 )
@@ -199,12 +206,12 @@ sold["DistrictType"] = None
 sold.loc[
     sold_join.index,
     "SchoolDistrict"
-] = sold_join["DistrictNa"].values
+] = sold_join["DistrictName"].values
 
 sold.loc[
     sold_join.index,
-    "DistrictTy"
-] = sold_join["DistrictTy"].values
+    "DistrictType"
+] = sold_join["DistrictType"].values
 
 listings["SchoolDistrict"] = None
 listings["DistrictTy"] = None
@@ -212,12 +219,12 @@ listings["DistrictTy"] = None
 listings.loc[
     listings_join.index,
     "SchoolDistrict"
-] = listings_join["DistrictNa"].values
+] = listings_join["DistrictName"].values
 
 listings.loc[
     listings_join.index,
-    "DistrictTy"
-] = listings_join["DistrictTy"].values
+    "DistrictType"
+] = listings_join["DistrictType"].values
 
 print("\nSchool district assignment complete.")
 
@@ -226,7 +233,7 @@ print(
         ["Latitude",
          "Longitude",
          "SchoolDistrict",
-         "DistrictTy"]
+         "DistrictType"]
     ].head(10)
 )
 
@@ -403,18 +410,6 @@ listings.to_csv(
     "CombinedListingsResidentialFeatures.csv",
     index=False
 )
-
-
-print("\nFiles Created:")
-print("- CombinedSoldResidentialFeatures.csv")
-print("- CombinedListingsResidentialFeatures.csv")
-print("- PropertyTypeSummary.csv")
-print("- PropertySubTypeSummary.csv")
-print("- CountySummary.csv")
-print("- MLSAreaSummary.csv")
-print("- ListOfficeSummary.csv")
-print("- BuyerOfficeSummary.csv")
-
 
 print("\nFinal Dataset Shapes")
 print(f"Sold Dataset: {sold.shape}")
